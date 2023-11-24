@@ -20,6 +20,10 @@ users_db = {
 }
 
 
+class HealthStatusResponse(BaseModel):
+    message: str
+
+
 class Question(BaseModel):
     question: str
     subject: Set[str]
@@ -34,6 +38,24 @@ class Question(BaseModel):
 
 class ResponseQuestionCreate(BaseModel):
     question: Question
+    id: str
+    created_at: str
+
+
+class QuestionRequest(BaseModel):
+    question: str
+    subject: Set[str]
+    use: Set[str]
+    correct: Optional[Set[str]] = None
+    responseA: str
+    responseB: str
+    responseC: str
+    responseD: Optional[str]
+    remark: Optional[str] = None
+
+
+class QuestionResponse(BaseModel):
+    question: QuestionRequest
     id: str
     created_at: str
 
@@ -60,7 +82,7 @@ def verify_basic_auth(authorization: str = Header(...)):
 
 @app.get("/", name="Check the health status of the API.")
 async def get_status():
-    return {"message": "healthy"}
+    return HealthStatusResponse(message="healthy")
 
 
 @app.get("/questions", name="Get a random set of multiple-choice questions.")
@@ -98,7 +120,7 @@ async def get_questions(
     return sampled_data.to_dict(orient="index")
 
 
-@app.post("/question", name="Create a new question")
+@app.post("/question", name="Create a new question", response_model=QuestionResponse)
 async def create_question(
     current_user: str = Depends(verify_basic_auth), question: Question = None
 ):
