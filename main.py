@@ -11,7 +11,7 @@ from fastapi import HTTPException
 from fastapi import Query
 from pydantic import BaseModel
 
-data = pd.read_csv("./questions.csv")
+data = pd.read_csv("./questions.csv", delimiter=";")
 
 users_db = {
     "aurelia": "augustina",
@@ -60,6 +60,22 @@ class QuestionResponse(BaseModel):
     created_at: str
 
 
+class QuestionResponseItem(BaseModel):
+    question: str
+    subject: Set[str]
+    use: Set[str]
+    correct: Optional[Set[str]] = None
+    responseA: str
+    responseB: str
+    responseC: str
+    responseD: Optional[str] = None
+    remark: Optional[str] = None
+
+
+class GetQuestionsResponse(BaseModel):
+    questions: List[QuestionResponseItem]
+
+
 app = FastAPI(
     title="API for creating questionnaires",
     description="API allows users to get MCQ, and admins to create new questions",
@@ -85,7 +101,11 @@ async def get_status():
     return HealthStatusResponse(message="healthy")
 
 
-@app.get("/questions", name="Get a random set of multiple-choice questions.")
+@app.get(
+    "/questions",
+    name="Get a random set of multiple-choice questions.",
+    response_model=GetQuestionsResponse,
+)
 async def get_questions(
     current_user: str = Depends(verify_basic_auth),
     test_type: str = Query(
@@ -114,10 +134,26 @@ async def get_questions(
         num_samples_to_take = min(num_items, len(filtered_data))
         sampled_data = filtered_data.head(num_samples_to_take)
         sampled_data = sampled_data.fillna("")
+
+        # Convert the DataFrame into a list of QuestionResponseItem instances
+        questions_list = []
+        for _, row in sampled_data.iterrows():
+            question_item = QuestionResponseItem(
+                question=row["question"],
+                subject=set(row["subject"].split(",")),
+                use=set(row["use"].split(",")),
+                correct=set(row["correct"].split(",")) if row["correct"] else None,
+                responseA=row["responseA"],
+                responseB=row["responseB"],
+                responseC=row["responseC"],
+                responseD=row["responseD"] if "responseD" in row else None,
+                remark=row["remark"] if "remark" in row else None,
+            )
+            questions_list.append(question_item)
+
+        return GetQuestionsResponse(questions=questions_list)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Something went wrong: {e}")
-
-    return sampled_data.to_dict(orient="index")
 
 
 @app.post("/question", name="Create a new question", response_model=QuestionResponse)
