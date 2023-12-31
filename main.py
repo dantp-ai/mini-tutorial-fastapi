@@ -117,9 +117,7 @@ async def get_questions(
         enum=data.subject.unique().tolist(),
         min_items=1,
     ),
-    num_items: int = Query(
-        ..., description="How many questions to get", enum=[5, 10, 20]
-    ),
+    num_items: int = Query(..., description="How many questions to get", enum=[5, 10]),
 ):
 
     if not categories or "" in categories:
