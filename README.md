@@ -51,7 +51,7 @@ Here are the main endpoints of the API:
    - Parameters:
      - `test_type` (query, required): Choose a test type.
      - `categories` (query, required): Choose one or more categories.
-     - `num_items` (query, required): How many questions to get (options: 5, 10, 20).
+     - `num_items` (query, required): How many questions to get (options: 5, 10).
 
    Example:
 
